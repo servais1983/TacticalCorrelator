@@ -51,7 +51,7 @@ elif [ "$MODE" == "prod" ]; then
     echo -e "\n${YELLOW}Démarrage en mode production...${NC}"
     docker-compose up --build -d
     echo -e "\n${GREEN}TacticalCorrelator est démarré!${NC}"
-    echo -e "API disponible sur: ${YELLOW}http://localhost:8000${NC}"
+    echo -e "API disponible sur: ${YELLOW}http://localhost:8080${NC}"
     echo -e "Neo4j disponible sur: ${YELLOW}http://localhost:7474${NC}"
     echo -e "\nPour voir les logs: ${YELLOW}docker-compose logs -f${NC}"
 else
