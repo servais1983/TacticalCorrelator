@@ -1,9 +1,9 @@
 # TacticalCorrelator 🔍
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://github.com/servais1983/TacticalCorrelator/workflows/CI/badge.svg)](https://github.com/servais1983/TacticalCorrelator/actions)
-[![Code Coverage](https://codecov.io/gh/servais1983/TacticalCorrelator/branch/main/graph/badge.svg)](https://codecov.io/gh/servais1983/TacticalCorrelator)
+[![Docker](https://img.shields.io/badge/docker-ready-brightgreen.svg)](https://www.docker.com/)
+[![Neo4j](https://img.shields.io/badge/neo4j-5.13-blue.svg)](https://neo4j.com/)
 
 **TacticalCorrelator** est un framework de corrélation forensique multi-sources avancé qui utilise le machine learning et les bases de données graphiques pour identifier automatiquement les connexions entre les artefacts numériques.
 
@@ -29,31 +29,113 @@
 
 ## 🛠️ Installation
 
-### Installation Rapide
-```bash
-pip install tactical-correlator
-```
+### Prérequis
+- Docker et Docker Compose
+- Git
+- 8GB RAM minimum
+- 20GB d'espace disque disponible
 
-### Installation Développeur
+### Installation Rapide avec Docker (Recommandé)
+
+#### 1. Cloner le repository
 ```bash
 git clone https://github.com/servais1983/TacticalCorrelator.git
 cd TacticalCorrelator
-pip install -e .
 ```
 
-### Installation Docker
+#### 2. Démarrage automatique
+
+**Sur Windows (PowerShell):**
+```powershell
+.\start.ps1 prod
+```
+
+**Sur Linux/macOS:**
 ```bash
+chmod +x start.sh
+./start.sh prod
+```
+
+#### 3. Accès aux services
+- **API REST**: http://localhost:8000
+- **Documentation API**: http://localhost:8000/docs
+- **Neo4j Browser**: http://localhost:7474 (login: neo4j / password: tactical123)
+
+### Installation Manuelle avec Docker
+
+```bash
+# Créer les répertoires nécessaires
+mkdir -p evidence results config logs
+
+# Démarrer les services
 docker-compose up -d
+
+# Vérifier le statut
+docker-compose ps
+
+# Voir les logs
+docker-compose logs -f
+```
+
+### Installation pour le Développement
+
+```bash
+# Clone et installation
+git clone https://github.com/servais1983/TacticalCorrelator.git
+cd TacticalCorrelator
+
+# Environnement virtuel Python
+python -m venv venv
+source venv/bin/activate  # Linux/macOS
+# ou
+.\venv\Scripts\activate  # Windows
+
+# Installation des dépendances
+pip install -r requirements.txt
+pip install -e .
+
+# Démarrage en mode développement
+./start.sh dev  # Linux/macOS
+# ou
+.\start.ps1 dev  # Windows
 ```
 
 ## 📖 Usage Rapide
 
-### Analyse de Base
+### API REST
+
+#### Test de santé
+```bash
+curl http://localhost:8000/health
+```
+
+#### Statut du système
+```bash
+curl http://localhost:8000/api/v1/status
+```
+
+### CLI
+```bash
+# Analyse complète
+tactical-correlator analyze --case "incident_2025" --evidence ./evidence/ --output ./results/
+
+# Analyse en temps réel
+tactical-correlator monitor --sources "evtx,dns,proxy" --threshold 0.8
+
+# Export des résultats
+tactical-correlator export --format stix --output report.json
+```
+
+### Python SDK
 ```python
 from tactical_correlator import TacticalCorrelator
 
 # Initialisation
-correlator = TacticalCorrelator()
+correlator = TacticalCorrelator(
+    neo4j_uri="bolt://localhost:7687",
+    neo4j_user="neo4j",
+    neo4j_password="tactical123"
+)
 
 # Analyse d'un cas
 results = correlator.analyze_case(
@@ -69,18 +151,6 @@ results = correlator.analyze_case(
 # Affichage des résultats prioritaires
 for event in results.high_priority_events:
     print(f"[{event.timestamp}] {event.description} (Score: {event.priority_score})")
-```
-
-### CLI
-```bash
-# Analyse complète
-tactical-correlator analyze --case "incident_2025" --evidence ./evidence/ --output ./results/
-
-# Analyse en temps réel
-tactical-correlator monitor --sources "evtx,dns,proxy" --threshold 0.8
-
-# Export des résultats
-tactical-correlator export --format stix --output report.json
 ```
 
 ## 🏗️ Architecture
@@ -99,96 +169,120 @@ tactical-correlator export --format stix --output report.json
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │    Parsers      │    │    Neo4j        │    │   Web Interface │
 │                 │    │   Graph DB      │    │                 │
-│ • Multi-format  │    │                 │    │ • Dashboard     │
-│ • Cross-platform│    │ • Relationships │    │ • Visualizations│
-│ • Extensible    │    │ • Queries       │    │ • API Endpoints │
+│ • Multi-format  │    │                 │    │ • REST API      │
+│ • Cross-platform│    │ • Relationships │    │ • Dashboard     │
+│ • Extensible    │    │ • Queries       │    │ • Visualizations│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🧠 Machine Learning
+### Stack Technique
 
-### Modèles Intégrés
-- **Isolation Forest**: Détection d'anomalies non supervisée
-- **Random Forest**: Classification des événements
-- **LSTM**: Analyse de séquences temporelles
-- **Clustering**: Groupement d'événements similaires
+- **Backend**: Python 3.11, FastAPI, Uvicorn
+- **Base de données**: Neo4j 5.13 Community Edition
+- **ML/IA**: scikit-learn, pandas, numpy
+- **Parsers**: python-evtx, pyprefetch, et parsers custom
+- **API**: REST avec documentation OpenAPI
+- **Containerisation**: Docker & Docker Compose
 
-### Scoring Intelligent
-```python
-# Exemple de scoring automatique
-event_score = correlator.ml_engine.calculate_priority_score(
-    event=suspicious_event,
-    context=timeline_context,
-    historical_data=past_incidents
-)
-# Score: 0.94 (Très haute priorité)
+## 📁 Structure du Projet
+
 ```
-
-## 📊 Exemples d'Analyse
-
-### Détection d'Intrusion
-```python
-# Corrélation automatique d'une intrusion
-results = correlator.correlate_events([
-    "auth_failure.log",      # Tentatives de brute force
-    "network_traffic.pcap",  # Trafic réseau suspect
-    "System.evtx"           # Événements système Windows
-])
-
-# Résultats automatiques
-print(f"Attaque détectée: {results.attack_pattern}")
-print(f"Vecteur d'attaque: {results.attack_vector}")
-print(f"Confidence: {results.confidence_score}")
-```
-
-### Analyse de Malware
-```python
-# Corrélation d'activité malware
-malware_analysis = correlator.analyze_malware_activity(
-    process_creation_logs="./sysmon.evtx",
-    network_connections="./network.log",
-    file_modifications="./file_audit.log"
-)
-
-# Timeline d'infection
-for event in malware_analysis.infection_timeline:
-    print(f"{event.timestamp}: {event.description}")
+TacticalCorrelator/
+├── docker/                 # Fichiers Docker
+│   └── Dockerfile         
+├── tactical_correlator/    # Code source principal
+│   ├── api/               # API REST FastAPI
+│   ├── config/            # Configuration
+│   ├── core/              # Logique métier
+│   ├── parsers/           # Parsers multi-formats
+│   └── utils/             # Utilitaires
+├── evidence/              # Répertoire des preuves (local)
+├── results/               # Résultats d'analyse (local)
+├── config/                # Configuration personnalisée
+├── logs/                  # Logs d'application
+├── docker-compose.yml     # Configuration Docker
+├── start.sh              # Script de démarrage Linux/macOS
+├── start.ps1             # Script de démarrage Windows
+└── requirements.txt       # Dépendances Python
 ```
 
 ## 🔧 Configuration
 
-### Fichier de Configuration
+### Variables d'Environnement
+
+```bash
+# Neo4j
+NEO4J_URI=bolt://neo4j:7687
+NEO4J_USERNAME=neo4j
+NEO4J_PASSWORD=tactical123
+
+# API
+API_HOST=0.0.0.0
+API_PORT=8000
+API_RELOAD=true
+
+# Paths
+EVIDENCE_PATH=/app/evidence
+RESULTS_PATH=/app/results
+CONFIG_PATH=/app/config
+```
+
+### Configuration Personnalisée
+
+Créez un fichier `config/settings.yaml`:
+
 ```yaml
-# config.yaml
 database:
   neo4j:
     uri: "bolt://localhost:7687"
     username: "neo4j"
-    password: "password"
+    password: "tactical123"
 
-machine_learning:
-  models:
-    anomaly_detection: "isolation_forest"
-    priority_scoring: "random_forest"
-    pattern_matching: "lstm"
-  
+analysis:
   thresholds:
     anomaly_score: 0.8
     priority_score: 0.7
     confidence_level: 0.9
-
+  
 parsers:
-  windows:
+  enabled:
     - evtx
     - prefetch
-    - amcache
-  linux:
-    - syslog
-    - auth
-  network:
     - dns
     - proxy
-    - firewall
+```
+
+## 🐳 Commandes Docker Utiles
+
+```bash
+# Voir les logs en temps réel
+docker-compose logs -f
+
+# Arrêter les services
+docker-compose down
+
+# Arrêter et supprimer les volumes
+docker-compose down -v
+
+# Reconstruire les images
+docker-compose build --no-cache
+
+# Exécuter des commandes dans un conteneur
+docker-compose exec tactical-correlator-app bash
+docker-compose exec neo4j cypher-shell
+```
+
+## 🧪 Tests
+
+```bash
+# Tests unitaires
+pytest tests/
+
+# Tests avec couverture
+pytest --cov=tactical_correlator tests/
+
+# Tests d'intégration
+pytest tests/integration/
 ```
 
 ## 🤝 Contribution
@@ -201,10 +295,34 @@ parsers:
 
 ## 📝 Documentation
 
-- [Installation Guide](docs/INSTALLATION.md)
-- [Usage Examples](docs/USAGE.md)
-- [API Reference](docs/API.md)
-- [Contributing Guidelines](docs/CONTRIBUTING.md)
+- [Guide d'Installation Détaillé](docs/INSTALLATION.md)
+- [Exemples d'Usage](docs/USAGE.md)
+- [Référence API](docs/API.md)
+- [Guide de Contribution](docs/CONTRIBUTING.md)
+
+## 🔍 Dépannage
+
+### Problème de connexion à Neo4j
+```bash
+# Vérifier que Neo4j est bien démarré
+docker-compose ps
+docker-compose logs neo4j
+
+# Tester la connexion
+docker-compose exec neo4j cypher-shell -u neo4j -p tactical123
+```
+
+### Erreur "file not found"
+```bash
+# S'assurer que tous les répertoires existent
+mkdir -p evidence results config logs docker
+```
+
+### Problème de permissions (Linux/macOS)
+```bash
+# Donner les permissions d'exécution
+chmod +x start.sh
+```
 
 ## 📄 License
 
@@ -213,15 +331,15 @@ Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de
 ## 🙏 Remerciements
 
 - [Neo4j](https://neo4j.com/) pour la base de données graphique
+- [FastAPI](https://fastapi.tiangolo.com/) pour le framework API
 - [scikit-learn](https://scikit-learn.org/) pour les outils ML
-- [pandas](https://pandas.pydata.org/) pour la manipulation de données
 - La communauté forensique pour les retours et contributions
 
 ## 📞 Support
 
 - 🐛 [Issues](https://github.com/servais1983/TacticalCorrelator/issues)
 - 💬 [Discussions](https://github.com/servais1983/TacticalCorrelator/discussions)
-- 📧 Email: support@tacticalcorrelator.com
+- 📧 Email: stservais0409@gmail.com
 
 ---
 
