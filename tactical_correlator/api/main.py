@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import os
 from typing import Dict, Any
 
 from tactical_correlator.core.database import Neo4jDatabase
@@ -125,9 +126,10 @@ async def get_status():
 
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.getenv("API_PORT", "8080"))
     uvicorn.run(
         "tactical_correlator.api.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=port,
         reload=True
     )
