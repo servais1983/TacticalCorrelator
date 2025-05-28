@@ -5,7 +5,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     DEBIAN_FRONTEND=noninteractive \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    API_PORT=8080
 
 # Répertoire de travail
 WORKDIR /app
@@ -37,11 +38,11 @@ RUN pip install -e .
 RUN mkdir -p /app/evidence /app/results /app/config /app/logs
 
 # Exposition du port
-EXPOSE 8000
+EXPOSE 8080
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Commande par défaut
-CMD ["python", "-m", "uvicorn", "tactical_correlator.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["python", "-m", "uvicorn", "tactical_correlator.api.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
