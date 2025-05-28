@@ -61,7 +61,7 @@ switch ($Mode) {
         Write-Host "`nDémarrage en mode production..." -ForegroundColor Yellow
         docker-compose up --build -d
         Write-Host "`nTacticalCorrelator est démarré!" -ForegroundColor Green
-        Write-Host "API disponible sur: http://localhost:8000" -ForegroundColor Yellow
+        Write-Host "API disponible sur: http://localhost:8080" -ForegroundColor Yellow
         Write-Host "Neo4j disponible sur: http://localhost:7474" -ForegroundColor Yellow
         Write-Host "`nPour voir les logs: docker-compose logs -f" -ForegroundColor Yellow
     }
